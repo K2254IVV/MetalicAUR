@@ -2,10 +2,17 @@
 **MetalicAUR** - The analog of Original AUR with "other" Soft
 The base of packages:
  - ArchTools (Lastest)
+ 
  - Wine-Base (NOT EXISTS)
+ 
  - SumblimeText4 (NOT EXISTS)
+ 
  - Steam (port) (NOT EXISTS)
+ 
  - Telegram-deb (NOT EXISTS)
+ 
  - Discord-deb (NOT EXISTS)
+ 
  - Chrome-deb (NOT EXISTS)
+ 
  - ZapretFast (EXISTS but NOT REALIZED)
