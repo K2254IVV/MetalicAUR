@@ -17,3 +17,13 @@ The base of packages:
  - Chrome-deb (NOT EXISTS)
  
  - ZapretFast (EXISTS but NOT REALIZED)
+
+---
+
+how to add MetalicAUR to pacman?:
+add this to /etc/pacman.conf:
+```bash
+[MetalicAUR]
+SigLevel = Optional TrustAll
+Server = https://k2254ivv.github.io/MetalicAUR/x86_64
+```
