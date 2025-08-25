@@ -1,0 +1,33 @@
+name: Build MetalicAUR Packages
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Ежедневная сборка
+  push:
+    paths:
+      - 'packages/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux/base
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      
+    - name: Setup environment
+      run: |
+        pacman -Syu --noconfirm base-devel git
+        
+    - name: Build packages
+      run: |
+        cd packages
+        chmod +x ../scripts/build-all.sh
+        ../scripts/build-all.sh
+        
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./x86_64
