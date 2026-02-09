@@ -1,33 +1,70 @@
-name: Build MetalicAUR Packages
+name: HoloArch Build Server
 
 on:
-  schedule:
-    - cron: '0 0 * * *'  # Ежедневная сборка
   push:
-    paths:
-      - 'packages/**'
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *' # Раз в сутки проверяем обновления
+  workflow_dispatch: # Возможность запустить руками
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    container: archlinux/base
-    
+    container: 
+      image: archlinux:base-devel
+      options: --privileged # Нужно для некоторых операций внутри контейнера
+
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-      
-    - name: Setup environment
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    - name: Prepare System
       run: |
-        pacman -Syu --noconfirm base-devel git
-        
-    - name: Build packages
+        # Включаем мультилиб и обновляем ключи
+        echo -e "[multilib]\nInclude = /etc/pacman.d/mirrorlist" >> /etc/pacman.conf
+        pacman-key --init
+        pacman-key --populate archlinux
+        pacman -Syu --noconfirm git sudo binutils
+
+    - name: Setup Build User
       run: |
-        cd packages
-        chmod +x ../scripts/build-all.sh
-        ../scripts/build-all.sh
-        
+        # Создаем пользователя, так как makepkg не работает под root
+        useradd -m builder
+        echo "builder ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+        chown -R builder:builder .
+
+    - name: Build Packages (Example: Gamescope-Plus)
+      run: |
+        sudo -u builder bash -c '
+          # Функция для сборки из AUR
+          build_aur() {
+            git clone https://aur.archlinux.org
+            cd $1
+            makepkg -s --noconfirm
+            cd ..
+          }
+
+          mkdir -p build_output
+          cd build_output
+          
+          # Собираем то, что нужно для HoloArch
+          build_aur gamescope-plus
+          # Сюда можно добавить другие пакеты (steamos-compositor-plus и т.д.)
+        '
+
+    - name: Create Repository Database
+      run: |
+        mkdir -p repo/x86_64
+        cp build_output/*/*.pkg.tar.zst repo/x86_64/
+        cd repo/x86_64
+        repo-add holoarch.db.tar.gz *.pkg.tar.zst
+        # Удаляем симлинки, чтобы GitHub Pages не тупил
+        rm -f holoarch.db holoarch.files
+        cp holoarch.db.tar.gz holoarch.db
+        cp holoarch.files.tar.gz holoarch.files
+
     - name: Deploy to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
         github_token: ${{ secrets.GITHUB_TOKEN }}
-        publish_dir: ./x86_64
+        publish_dir: ./repo
